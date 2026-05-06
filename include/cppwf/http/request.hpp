@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cppwf/http/method.hpp"
 #include <string>
 #include <unordered_map>
 
@@ -8,7 +9,7 @@ namespace http {
 
 class Request {
 public:
-    std::string method;
+    HttpMethod method;
     std::string path;
     std::string version;
     std::unordered_map<std::string, std::string> headers;
