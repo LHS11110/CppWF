@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include <sstream>
+#include <string>
 #include <stdexcept>
 #include <cstring>
 
@@ -144,24 +144,56 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
     int n = conn.read(buf, BUF_SIZE - 1);
     if (n <= 0) return {};
 
-    std::istringstream stream(buf);
+    std::string raw_data(buf, n);
     http::Request req;
+    std::size_t pos = 0;
+
+    auto next_line = [&raw_data, &pos]() -> std::string {
+        if (pos >= raw_data.size()) return "";
+        auto end = raw_data.find('\n', pos);
+        std::string res;
+        if (end == std::string::npos) {
+            res = raw_data.substr(pos);
+            pos = raw_data.size();
+        } else {
+            res = raw_data.substr(pos, end - pos);
+            pos = end + 1;
+        }
+        if (!res.empty() && res.back() == '\r') {
+            res.pop_back();
+        }
+        return res;
+    };
 
     // 요청 라인: METHOD PATH VERSION
-    std::string line;
-    if (std::getline(stream, line)) {
-        std::istringstream rl(line);
-        rl >> req.method >> req.path >> req.version;
+    std::string line = next_line();
+    if (!line.empty()) {
+        auto space1 = line.find(' ');
+        if (space1 != std::string::npos) {
+            req.method = line.substr(0, space1);
+            auto space2 = line.find(' ', space1 + 1);
+            if (space2 != std::string::npos) {
+                req.path = line.substr(space1 + 1, space2 - space1 - 1);
+                req.version = line.substr(space2 + 1);
+            } else {
+                req.path = line.substr(space1 + 1);
+            }
+        }
     }
 
     // 헤더 파싱
-    while (std::getline(stream, line) && line != "\r") {
+    while (true) {
+        line = next_line();
+        if (line.empty()) break;
+
         auto colon = line.find(':');
         if (colon != std::string::npos) {
-            std::string key   = line.substr(0, colon);
-            std::string value = line.substr(colon + 2); // ": " 건너뜀
-            if (!value.empty() && value.back() == '\r') value.pop_back();
-            req.headers[key] = value;
+            std::string key = line.substr(0, colon);
+            std::size_t val_start = colon + 1;
+            while (val_start < line.size() && (line[val_start] == ' ' || line[val_start] == '\t')) {
+                val_start++;
+            }
+            req.headers[key] = line.substr(val_start);
         }
     }
 
@@ -169,8 +201,12 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
     auto it = req.headers.find("Content-Length");
     if (it != req.headers.end()) {
         std::size_t len = std::stoul(it->second);
-        req.body.resize(len);
-        stream.read(req.body.data(), static_cast<std::streamsize>(len));
+        std::size_t available = raw_data.size() - pos;
+        std::size_t read_len = (len < available) ? len : available;
+        req.body = raw_data.substr(pos, read_len);
+        if (len > read_len) {
+            req.body.resize(len, '\0');
+        }
     }
 
     return req;
@@ -181,14 +217,14 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
 // ─────────────────────────────────────────────
 
 void Server::send_response(ssl::SslConnection& conn, const http::Response& res) {
-    std::ostringstream oss;
-    oss << "HTTP/1.1 " << res.status_code << " " << res.status_message << "\r\n";
+    std::string response = "HTTP/1.1 " + std::to_string(res.status_code) + " " + res.status_message + "\r\n";
     for (const auto& [key, val] : res.headers) {
-        oss << key << ": " << val << "\r\n";
+        response += key + ": " + val + "\r\n";
     }
-    oss << "\r\n" << res.body;
+    response += "\r\n";
+    response += res.body;
 
-    conn.write(oss.str());
+    conn.write(response);
 }
 
 } // namespace server
