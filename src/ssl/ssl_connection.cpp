@@ -1,5 +1,6 @@
 #include "cppwf/ssl/ssl_connection.hpp"
 
+#include <iostream>
 #include <openssl/err.h>
 #include <unistd.h>
 
