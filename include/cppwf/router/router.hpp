@@ -20,7 +20,7 @@ public:
     bool dispatch(const http::Request& req, http::Response& res) const;
 
 private:
-    std::unordered_map<std::string, Handler> routes_[4];
+    std::unordered_map<std::string, std::unordered_map<std::string, Handler>> routes_;
 };
 
 } // namespace router

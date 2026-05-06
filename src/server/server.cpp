@@ -127,7 +127,7 @@ void Server::handle_client(int client_fd) {
     send_response(conn, res);
 
     log("[응답] " + std::to_string(res.status_code) +
-        " " + http::to_string(req.method) + " " + req.path);
+        " " + req.method + " " + req.path);
 
     // conn 소멸 시 SSL_shutdown / SSL_free / close(fd) 자동 처리
 }
@@ -151,9 +151,7 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
     std::string line;
     if (std::getline(stream, line)) {
         std::istringstream rl(line);
-        std::string method_str;
-        rl >> method_str >> req.path >> req.version;
-        req.method = http::parse_method(method_str);
+        rl >> req.method >> req.path >> req.version;
     }
 
     // 헤더 파싱
