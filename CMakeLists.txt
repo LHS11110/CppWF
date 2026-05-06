@@ -10,8 +10,13 @@ find_package(OpenSSL REQUIRED)
 # 헤더 경로
 include_directories(include)
 
-# 라이브러리 소스
-file(GLOB_RECURSE LIB_SOURCES src/**/*.cpp)
+# 라이브러리 소스 (모든 하위 디렉터리 포함)
+file(GLOB_RECURSE LIB_SOURCES
+    src/http/*.cpp
+    src/router/*.cpp
+    src/ssl/*.cpp
+    src/server/*.cpp
+)
 
 add_library(cppwf STATIC ${LIB_SOURCES})
 target_include_directories(cppwf PUBLIC include)
@@ -20,6 +25,7 @@ target_link_libraries(cppwf OpenSSL::SSL OpenSSL::Crypto)
 # 예제 빌드
 add_executable(hello_world examples/hello_world.cpp)
 target_link_libraries(hello_world cppwf)
+
 
 # 테스트
 enable_testing()

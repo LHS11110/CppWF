@@ -1,26 +1,32 @@
-#include "cppwf/router/router.hpp"
-#include "cppwf/http/request.hpp"
-#include "cppwf/http/response.hpp"
+#include "cppwf/server/server.hpp"
 #include <iostream>
 
 int main() {
-    cppwf::router::Router router;
+    cppwf::server::Server app;
 
-    router.get("/", [](const cppwf::http::Request& req, cppwf::http::Response& res) {
-        res.set_body("Hello, CppWF!", "text/plain");
+    // 인증서 및 개인키 로드
+    if (!app.load_certificate("cert.pem")) {
+        std::cerr << "[오류] 인증서 로드 실패: cert.pem\n";
+        return 1;
+    }
+    if (!app.load_private_key("key.pem")) {
+        std::cerr << "[오류] 개인키 로드 실패: key.pem\n";
+        return 1;
+    }
+
+    // 라우트 등록
+    app.router().get("/", [](const cppwf::http::Request&,
+                              cppwf::http::Response& res) {
+        res.set_body("<h1>Hello, CppWF!</h1>", "text/html");
     });
 
-    // 라우터 테스트
-    cppwf::http::Request req;
-    req.method = "GET";
-    req.path = "/";
+    app.router().get("/health", [](const cppwf::http::Request&,
+                                    cppwf::http::Response& res) {
+        res.set_body("{\"status\":\"ok\"}", "application/json");
+    });
 
-    cppwf::http::Response res;
-    if (router.dispatch(req, res)) {
-        std::cout << "[200] " << res.body << std::endl;
-    } else {
-        std::cout << "[404] Not Found" << std::endl;
-    }
+    // 443 포트에서 HTTPS 서버 시작
+    app.listen(443);
 
     return 0;
 }
