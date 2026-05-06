@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <string>
+#include <string_view>
 #include <stdexcept>
 #include <cstring>
 
@@ -144,15 +145,15 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
     int n = conn.read(buf, BUF_SIZE - 1);
     if (n <= 0) return {};
 
-    std::string raw_data(buf, n);
+    std::string_view raw_data(buf, n);
     http::Request req;
     std::size_t pos = 0;
 
-    auto next_line = [&raw_data, &pos]() -> std::string {
-        if (pos >= raw_data.size()) return "";
+    auto next_line = [&raw_data, &pos]() -> std::string_view {
+        if (pos >= raw_data.size()) return {};
         auto end = raw_data.find('\n', pos);
-        std::string res;
-        if (end == std::string::npos) {
+        std::string_view res;
+        if (end == std::string_view::npos) {
             res = raw_data.substr(pos);
             pos = raw_data.size();
         } else {
@@ -160,23 +161,23 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
             pos = end + 1;
         }
         if (!res.empty() && res.back() == '\r') {
-            res.pop_back();
+            res.remove_suffix(1);
         }
         return res;
     };
 
     // 요청 라인: METHOD PATH VERSION
-    std::string line = next_line();
+    std::string_view line = next_line();
     if (!line.empty()) {
         auto space1 = line.find(' ');
-        if (space1 != std::string::npos) {
-            req.method = line.substr(0, space1);
+        if (space1 != std::string_view::npos) {
+            req.method = std::string(line.substr(0, space1));
             auto space2 = line.find(' ', space1 + 1);
-            if (space2 != std::string::npos) {
-                req.path = line.substr(space1 + 1, space2 - space1 - 1);
-                req.version = line.substr(space2 + 1);
+            if (space2 != std::string_view::npos) {
+                req.path = std::string(line.substr(space1 + 1, space2 - space1 - 1));
+                req.version = std::string(line.substr(space2 + 1));
             } else {
-                req.path = line.substr(space1 + 1);
+                req.path = std::string(line.substr(space1 + 1));
             }
         }
     }
@@ -187,13 +188,13 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
         if (line.empty()) break;
 
         auto colon = line.find(':');
-        if (colon != std::string::npos) {
-            std::string key = line.substr(0, colon);
-            std::size_t val_start = colon + 1;
-            while (val_start < line.size() && (line[val_start] == ' ' || line[val_start] == '\t')) {
-                val_start++;
+        if (colon != std::string_view::npos) {
+            std::string_view key = line.substr(0, colon);
+            std::string_view val = line.substr(colon + 1);
+            while (!val.empty() && (val.front() == ' ' || val.front() == '\t')) {
+                val.remove_prefix(1);
             }
-            req.headers[key] = line.substr(val_start);
+            req.headers[std::string(key)] = std::string(val);
         }
     }
 
@@ -203,7 +204,7 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
         std::size_t len = std::stoul(it->second);
         std::size_t available = raw_data.size() - pos;
         std::size_t read_len = (len < available) ? len : available;
-        req.body = raw_data.substr(pos, read_len);
+        req.body = std::string(raw_data.substr(pos, read_len));
         if (len > read_len) {
             req.body.resize(len, '\0');
         }
@@ -217,12 +218,20 @@ http::Request Server::parse_request(ssl::SslConnection& conn) {
 // ─────────────────────────────────────────────
 
 void Server::send_response(ssl::SslConnection& conn, const http::Response& res) {
-    std::string response = "HTTP/1.1 " + std::to_string(res.status_code) + " " + res.status_message + "\r\n";
+    std::string response;
+    
+    // 예상 크기 계산하여 한 번만 할당 (오버헤드 방지)
+    std::size_t reserve_size = 32 + res.status_message.size() + res.body.size();
     for (const auto& [key, val] : res.headers) {
-        response += key + ": " + val + "\r\n";
+        reserve_size += key.size() + val.size() + 4; // ": \r\n"
     }
-    response += "\r\n";
-    response += res.body;
+    response.reserve(reserve_size);
+
+    response.append("HTTP/1.1 ").append(std::to_string(res.status_code)).append(" ").append(res.status_message).append("\r\n");
+    for (const auto& [key, val] : res.headers) {
+        response.append(key).append(": ").append(val).append("\r\n");
+    }
+    response.append("\r\n").append(res.body);
 
     conn.write(response);
 }
