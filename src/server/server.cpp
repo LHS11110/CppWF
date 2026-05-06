@@ -5,7 +5,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <cstring>
@@ -70,7 +69,7 @@ void Server::listen(int port) {
         throw std::runtime_error("listen() 실패: " + std::string(std::strerror(errno)));
     }
 
-    std::cout << "[CppWF] HTTPS 서버 시작 — 포트 " << port << " 대기 중\n";
+    log("[CppWF] HTTPS 서버 시작 — 포트 " + std::to_string(port) + " 대기 중");
 
     // 5. Accept 루프
     while (true) {
@@ -81,14 +80,14 @@ void Server::listen(int port) {
                                  reinterpret_cast<sockaddr*>(&client_addr),
                                  &client_len);
         if (client_fd < 0) {
-            std::cerr << "[경고] accept() 실패: " << std::strerror(errno) << "\n";
+            log("[경고] accept() 실패: " + std::string(std::strerror(errno)));
             continue;
         }
 
         char client_ip[INET_ADDRSTRLEN];
         ::inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
-        std::cout << "[연결] 클라이언트 접속: " << client_ip
-                  << ":" << ntohs(client_addr.sin_port) << "\n";
+        log("[연결] 클라이언트 접속: " + std::string(client_ip) +
+            ":" + std::to_string(ntohs(client_addr.sin_port)));
 
         handle_client(client_fd);
     }
@@ -103,11 +102,11 @@ void Server::handle_client(int client_fd) {
 
     // TLS 핸드셰이크
     if (!conn.accept()) {
-        std::cerr << "[오류] SSL 핸드셰이크 실패\n";
+        log("[오류] SSL 핸드셰이크 실패");
         return;
     }
 
-    std::cout << "[TLS] 핸드셰이크 완료 — " << conn.version() << "\n";
+    log("[TLS] 핸드셰이크 완료 — " + conn.version());
 
     // HTTP 요청 파싱
     http::Request req = parse_request(conn);
@@ -127,8 +126,8 @@ void Server::handle_client(int client_fd) {
     // 응답 전송
     send_response(conn, res);
 
-    std::cout << "[응답] " << res.status_code
-              << " " << req.method << " " << req.path << "\n";
+    log("[응답] " + std::to_string(res.status_code) +
+        " " + req.method + " " + req.path);
 
     // conn 소멸 시 SSL_shutdown / SSL_free / close(fd) 자동 처리
 }

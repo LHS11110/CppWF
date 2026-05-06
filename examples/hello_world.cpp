@@ -4,6 +4,9 @@
 int main() {
     cppwf::server::Server app;
 
+    // 로그 파일 설정 (생략하면 터미널 출력)
+    // app.set_log_file("server.log");  // 파일에 기록하려면 주석 해제
+
     // 인증서 및 개인키 로드
     if (!app.load_certificate("cert.pem")) {
         std::cerr << "[오류] 인증서 로드 실패: cert.pem\n";
