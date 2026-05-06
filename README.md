@@ -1,7 +1,51 @@
 # CppWF
 C++을 위한 웹 프레임워크
 
-## 의존성
+## 프로젝트 구조
+
+```
+CppWF/
+├── include/                  # 공개 헤더 파일
+│   └── cppwf/
+│       ├── http/
+│       │   ├── request.hpp   # HTTP 요청 클래스
+│       │   └── response.hpp  # HTTP 응답 클래스
+│       ├── router/
+│       │   └── router.hpp    # URL 라우터
+│       ├── ssl/
+│       │   └── ssl_context.hpp # OpenSSL 컨텍스트 래퍼
+│       └── middleware/
+│           └── middleware.hpp  # 미들웨어 인터페이스
+├── src/                      # 구현 파일
+│   ├── http/
+│   │   └── response.cpp
+│   ├── router/
+│   │   └── router.cpp
+│   ├── ssl/
+│   │   └── ssl_context.cpp
+│   └── middleware/
+├── tests/                    # 단위 테스트
+├── examples/                 # 사용 예제
+│   └── hello_world.cpp
+├── docs/                     # 문서
+├── cmake/                    # CMake 모듈
+├── CMakeLists.txt            # 빌드 설정
+├── .gitignore
+├── LICENSE
+├── NOTICE
+├── THIRD_PARTY_LICENSES.md
+└── README.md
+```
+
+## 빌드 방법
+
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
+
+
 
 ### OpenSSL
 
