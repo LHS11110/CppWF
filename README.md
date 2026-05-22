@@ -5,36 +5,42 @@ C++을 위한 웹 프레임워크
 
 ```
 CppWF/
-├── include/                  # 공개 헤더 파일
-│   └── cppwf/
-│       ├── http/
+├── include/                  # 라이브러리 공개 헤더 파일 모음
+│   └── cppwf/                # 네임스페이스 및 프로젝트 최상위 디렉터리
+│       ├── http/             # HTTP 통신 관련 클래스 및 구조체 (Request, Response 등)
 │       │   ├── request.hpp   # HTTP 요청 클래스
 │       │   └── response.hpp  # HTTP 응답 클래스
-│       ├── router/
+│       ├── router/           # URL 라우팅 및 핸들러 처리 관련 클래스
 │       │   └── router.hpp    # URL 라우터
-│       ├── ssl/
-│       │   └── ssl_context.hpp # OpenSSL 컨텍스트 래퍼
-│       └── middleware/
-│           └── middleware.hpp  # 미들웨어 인터페이스
-├── src/                      # 구현 파일
-│   ├── http/
+│       ├── server/           # HTTPS 서버 구동 및 로거, 연결 관리 등 메인 서버 로직
+│       │   ├── logger.hpp    # 로그 출력 함수 선언
+│       │   └── server.hpp    # HTTPS 서버 클래스
+│       └── ssl/              # OpenSSL 래핑 및 SSL 컨텍스트/연결 관리
+│           ├── ssl_connection.hpp # TLS/SSL 연결 세션 관리
+│           └── ssl_context.hpp # OpenSSL 컨텍스트 래퍼
+├── src/                      # 헤더에 대응되는 구현(소스) 파일 모음
+│   ├── http/                 # http 모듈 구현 파일
 │   │   └── response.cpp
-│   ├── router/
+│   ├── router/               # router 모듈 구현 파일
 │   │   └── router.cpp
-│   ├── ssl/
-│   │   └── ssl_context.cpp
-│   └── middleware/
-├── tests/                    # 단위 테스트
-├── examples/                 # 사용 예제
+│   ├── server/               # server 모듈 구현 파일
+│   │   ├── logger.cpp
+│   │   └── server.cpp
+│   └── ssl/                  # ssl 모듈 구현 파일
+│       ├── ssl_connection.cpp
+│       └── ssl_context.cpp
+├── tests/                    # 단위 테스트(Unit Tests) 및 통합 테스트 코드
+├── examples/                 # 사용 예제 및 데모 코드
 │   └── hello_world.cpp
-├── docs/                     # 문서
+├── docs/                     # 프로젝트 문서화 자료 (폴더 구조 명세서 등)
+│   └── README.md
 ├── cmake/                    # CMake 모듈
-├── CMakeLists.txt            # 빌드 설정
-├── .gitignore
-├── LICENSE
-├── NOTICE
-├── THIRD_PARTY_LICENSES.md
-└── README.md
+├── CMakeLists.txt            # 빌드 설정 파일
+├── .gitignore                # Git 버전 관리에서 제외할 파일 목록
+├── LICENSE                   # 프로젝트 라이선스 (MIT)
+├── NOTICE                    # 서드파티 저작권 및 공지사항 (OpenSSL)
+├── THIRD_PARTY_LICENSES.md   # 서드파티 라이선스 전문 및 고지 사항
+└── README.md                 # 프로젝트 개요 및 빌드, 기본 설명서
 ```
 
 ## 빌드 방법
